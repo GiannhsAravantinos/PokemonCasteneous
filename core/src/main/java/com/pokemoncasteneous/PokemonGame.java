@@ -2,9 +2,9 @@ package com.pokemoncasteneous;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.pokemoncasteneous.constants.ColorConstants;
 import com.pokemoncasteneous.screens.OverworldScreen;
+import com.pokemoncasteneous.utils.ScreenUtils;
 
 public final class PokemonGame extends Game {
     private SpriteBatch batch;
@@ -21,8 +21,7 @@ public final class PokemonGame extends Game {
 
     @Override
     public void render() {
-        ScreenUtils.clear(ColorConstants.APP_BACKGROUND.r, ColorConstants.APP_BACKGROUND.g,
-                ColorConstants.APP_BACKGROUND.b, ColorConstants.APP_BACKGROUND.a);
+        ScreenUtils.clear(ColorConstants.APP_BACKGROUND);
         super.render();
     }
 

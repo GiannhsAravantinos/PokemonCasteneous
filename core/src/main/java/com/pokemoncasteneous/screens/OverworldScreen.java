@@ -12,10 +12,11 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.pokemoncasteneous.PokemonGame;
-import com.pokemoncasteneous.constants.GameConstants;
+import com.pokemoncasteneous.constants.GameplayConstants;
+import com.pokemoncasteneous.constants.UiConstants;
+import com.pokemoncasteneous.utils.ScreenUtils;
 
 import static com.pokemoncasteneous.constants.ColorConstants.*;
 
@@ -24,9 +25,9 @@ public final class OverworldScreen extends ScreenAdapter {
     private final OrthographicCamera camera = new OrthographicCamera();
     private final OrthographicCamera hudCamera = new OrthographicCamera();
     private final FitViewport worldViewport = new FitViewport(
-            GameConstants.VIEW_COLUMNS, GameConstants.VIEW_ROWS, camera);
+            UiConstants.VIEW_COLUMNS, UiConstants.VIEW_ROWS, camera);
     private final FitViewport hudViewport = new FitViewport(
-            GameConstants.VIEW_COLUMNS, GameConstants.VIEW_ROWS, hudCamera);
+            UiConstants.VIEW_COLUMNS, UiConstants.VIEW_ROWS, hudCamera);
     private final ShapeRenderer shapes = new ShapeRenderer();
     private final BitmapFont font = new BitmapFont();
     private final Texture fallbackPlayerTexture;
@@ -78,7 +79,7 @@ public final class OverworldScreen extends ScreenAdapter {
         camera.position.set(game.state().playerX + 0.5f, game.state().playerY + 0.5f, 0);
         camera.update();
 
-        ScreenUtils.clear(OVERWORLD_GRASS.r, OVERWORLD_GRASS.g, OVERWORLD_GRASS.b, OVERWORLD_GRASS.a);
+        ScreenUtils.clear(OVERWORLD_GRASS);
         shapes.setProjectionMatrix(camera.combined);
         if (grassTile == null || pathTile == null) {
             shapes.begin(ShapeRenderer.ShapeType.Filled);
@@ -98,13 +99,13 @@ public final class OverworldScreen extends ScreenAdapter {
 
         // HUD coordinates use the same virtual grid, but stay fixed while the world camera follows the player.
         hudViewport.apply();
-        hudCamera.position.set(GameConstants.VIEW_COLUMNS / 2f, GameConstants.VIEW_ROWS / 2f, 0);
+        hudCamera.position.set(UiConstants.VIEW_COLUMNS / 2f, UiConstants.VIEW_ROWS / 2f, 0);
         hudCamera.update();
         SpriteBatch batch = game.batch();
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
         font.setColor(HUD_TEXT);
-        font.draw(batch, "FERNWOOD  /  ROUTE 01", 1, GameConstants.VIEW_ROWS - 1);
+        font.draw(batch, "FERNWOOD  /  ROUTE 01", 1, UiConstants.VIEW_ROWS - 1);
         font.draw(batch, "WASD / ARROWS  MOVE       ENTER  ENCOUNTER", 1, 1);
         batch.end();
 
@@ -142,9 +143,9 @@ public final class OverworldScreen extends ScreenAdapter {
                 moving = true;
             }
 
-            float timeForStep = (1f - stepProgress) / GameConstants.PLAYER_MOVE_SPEED;
+            float timeForStep = (1f - stepProgress) / GameplayConstants.PLAYER_MOVE_SPEED;
             float stepTime = Math.min(timeLeft, timeForStep);
-            stepProgress = Math.min(1f, stepProgress + stepTime * GameConstants.PLAYER_MOVE_SPEED);
+            stepProgress = Math.min(1f, stepProgress + stepTime * GameplayConstants.PLAYER_MOVE_SPEED);
             timeLeft -= stepTime;
             game.state().playerX = startX + (targetX - startX) * stepProgress;
             game.state().playerY = startY + (targetY - startY) * stepProgress;
@@ -160,10 +161,10 @@ public final class OverworldScreen extends ScreenAdapter {
     }
 
     private void drawGroundGrid() {
-        int firstX = MathUtils.floor(camera.position.x - GameConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + GameConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - GameConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + GameConstants.VIEW_ROWS / 2f) + 1;
+        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
+        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
+        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
+        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
 
         for (int x = firstX; x <= lastX; x++) {
             for (int y = firstY; y <= lastY; y++) {
@@ -175,10 +176,10 @@ public final class OverworldScreen extends ScreenAdapter {
     }
 
     private void drawTrees() {
-        int firstX = MathUtils.floor(camera.position.x - GameConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + GameConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - GameConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + GameConstants.VIEW_ROWS / 2f) + 1;
+        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
+        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
+        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
+        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
 
         for (int x = firstX; x <= lastX; x++) {
             for (int y = firstY; y <= lastY; y++) {
@@ -202,10 +203,10 @@ public final class OverworldScreen extends ScreenAdapter {
         SpriteBatch batch = game.batch();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        int firstX = MathUtils.floor(camera.position.x - GameConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + GameConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - GameConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + GameConstants.VIEW_ROWS / 2f) + 1;
+        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
+        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
+        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
+        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
         for (int x = firstX; x <= lastX; x++) {
             for (int y = firstY; y <= lastY; y++) {
                 Texture tile = x == 0 || y == 0 ? pathTile : grassTile;
@@ -219,14 +220,15 @@ public final class OverworldScreen extends ScreenAdapter {
         SpriteBatch batch = game.batch();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        int firstX = MathUtils.floor(camera.position.x - GameConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + GameConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - GameConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + GameConstants.VIEW_ROWS / 2f) + 1;
+        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
+        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
+        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
+        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
         for (int x = firstX; x <= lastX; x++) {
             for (int y = firstY; y <= lastY; y++) {
                 if ((x == 0 || y == 0) || Math.floorMod(x * 7 + y * 3, 11) != 0) continue;
-                batch.draw(treeSprite, x - 0.5f, y - 0.5f, 1f, 1.5f);
+                batch.draw(treeSprite, x - 0.5f, y - 0.5f,
+                        UiConstants.TREE_SPRITE_WIDTH, UiConstants.TREE_SPRITE_HEIGHT);
             }
         }
         batch.end();
@@ -236,15 +238,15 @@ public final class OverworldScreen extends ScreenAdapter {
         SpriteBatch batch = game.batch();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        float x = game.state().playerX - GameConstants.PLAYER_SPRITE_WIDTH / 2f;
-        float y = game.state().playerY - GameConstants.PLAYER_SPRITE_HEIGHT / 2f;
+        float x = game.state().playerX - UiConstants.PLAYER_SPRITE_WIDTH / 2f;
+        float y = game.state().playerY - UiConstants.PLAYER_SPRITE_HEIGHT / 2f;
         if (playerFrames == null) {
             batch.draw(fallbackPlayerTexture, x, y,
-                    GameConstants.PLAYER_SPRITE_WIDTH, GameConstants.PLAYER_SPRITE_HEIGHT);
+                    UiConstants.PLAYER_SPRITE_WIDTH, UiConstants.PLAYER_SPRITE_HEIGHT);
         } else {
-            int frame = moving ? 1 + (int) (animationTime / 0.12f) % 3 : 0;
+            int frame = moving ? 1 + (int) (animationTime / UiConstants.PLAYER_WALK_FRAME_SECONDS) % 3 : 0;
             batch.draw(playerFrames[facingRow][frame], x, y,
-                    GameConstants.PLAYER_SPRITE_WIDTH, GameConstants.PLAYER_SPRITE_HEIGHT);
+                    UiConstants.PLAYER_SPRITE_WIDTH, UiConstants.PLAYER_SPRITE_HEIGHT);
         }
         batch.end();
     }

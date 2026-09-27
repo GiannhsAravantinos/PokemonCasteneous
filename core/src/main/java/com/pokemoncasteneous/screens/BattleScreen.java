@@ -11,10 +11,10 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.pokemoncasteneous.PokemonGame;
-import com.pokemoncasteneous.constants.GameConstants;
+import com.pokemoncasteneous.constants.GameplayConstants;
+import com.pokemoncasteneous.utils.ScreenUtils;
 
 import static com.pokemoncasteneous.constants.ColorConstants.*;
 
@@ -81,8 +81,8 @@ public final class BattleScreen extends ScreenAdapter {
             root.add(button("BENCH", () -> { mode = "bench"; rebuildMenu(); })).width(190).height(54).pad(5);
             root.add(button("RUN", this::runAway)).width(190).height(54).pad(5).row();
         } else if (mode.equals("fight")) {
-            root.add(button("LEAF LASH", () -> attack(GameConstants.LEAF_LASH_DAMAGE))).width(190).height(54).pad(5);
-            root.add(button("QUICK PAW", () -> attack(GameConstants.QUICK_PAW_DAMAGE))).width(190).height(54).pad(5).row();
+            root.add(button("LEAF LASH", () -> attack(GameplayConstants.LEAF_LASH_DAMAGE))).width(190).height(54).pad(5);
+            root.add(button("QUICK PAW", () -> attack(GameplayConstants.QUICK_PAW_DAMAGE))).width(190).height(54).pad(5).row();
             root.add(button("BACK", () -> { mode = "main"; rebuildMenu(); })).colspan(2).width(190).height(48).pad(5).row();
         } else if (mode.equals("bag")) {
             root.add(button("POTION  x" + game.state().potions, this::usePotion)).colspan(2).width(390).height(54).pad(5).row();
@@ -93,8 +93,8 @@ public final class BattleScreen extends ScreenAdapter {
             root.add(button("BACK", () -> { mode = "main"; rebuildMenu(); })).colspan(2).width(190).height(48).pad(5).row();
         }
         root.add(playerHp).colspan(2).left().height(34).padTop(8).row();
-        playerHp.setText("EMBERFOX   " + game.state().playerHp + " / " + GameConstants.PLAYER_MAX_HP + " HP");
-        enemyHp.setText("MOSSLING   " + game.state().enemyHp + " / " + GameConstants.ENEMY_MAX_HP + " HP");
+        playerHp.setText("EMBERFOX   " + game.state().playerHp + " / " + GameplayConstants.PLAYER_MAX_HP + " HP");
+        enemyHp.setText("MOSSLING   " + game.state().enemyHp + " / " + GameplayConstants.ENEMY_MAX_HP + " HP");
     }
 
     private void attack(int damage) {
@@ -110,26 +110,26 @@ public final class BattleScreen extends ScreenAdapter {
             root.add(button("BACK TO FERNWOOD", this::returnToOverworld)).width(300).height(58).center();
             return;
         }
-        game.state().playerHp = Math.max(0, game.state().playerHp - GameConstants.ENEMY_COUNTER_DAMAGE);
+        game.state().playerHp = Math.max(0, game.state().playerHp - GameplayConstants.ENEMY_COUNTER_DAMAGE);
         message.setText("Your move dealt " + damage + " damage. Mossling counters for "
-                + GameConstants.ENEMY_COUNTER_DAMAGE + "!");
-        playerHp.setText("EMBERFOX   " + game.state().playerHp + " / " + GameConstants.PLAYER_MAX_HP + " HP");
-        enemyHp.setText("MOSSLING   " + game.state().enemyHp + " / " + GameConstants.ENEMY_MAX_HP + " HP");
+                + GameplayConstants.ENEMY_COUNTER_DAMAGE + "!");
+        playerHp.setText("EMBERFOX   " + game.state().playerHp + " / " + GameplayConstants.PLAYER_MAX_HP + " HP");
+        enemyHp.setText("MOSSLING   " + game.state().enemyHp + " / " + GameplayConstants.ENEMY_MAX_HP + " HP");
         if (game.state().playerHp == 0) {
             message.setText("Emberfox is tired. Your party recovers!");
-            game.state().playerHp = GameConstants.PLAYER_MAX_HP;
+            game.state().playerHp = GameplayConstants.PLAYER_MAX_HP;
             mode = "main";
         }
     }
 
     private void usePotion() {
         if (game.state().potions == 0) message.setText("Your bag is out of potions.");
-        else if (game.state().playerHp == GameConstants.PLAYER_MAX_HP) message.setText("Your Emberfox is already at full health.");
+        else if (game.state().playerHp == GameplayConstants.PLAYER_MAX_HP) message.setText("Your Emberfox is already at full health.");
         else {
             game.state().potions--;
-            game.state().playerHp = Math.min(GameConstants.PLAYER_MAX_HP,
-                    game.state().playerHp + GameConstants.POTION_HEAL_AMOUNT);
-            message.setText("Potion used. Emberfox recovered " + GameConstants.POTION_HEAL_AMOUNT + " HP.");
+            game.state().playerHp = Math.min(GameplayConstants.PLAYER_MAX_HP,
+                    game.state().playerHp + GameplayConstants.POTION_HEAL_AMOUNT);
+            message.setText("Potion used. Emberfox recovered " + GameplayConstants.POTION_HEAL_AMOUNT + " HP.");
         }
         mode = "main";
         rebuildMenu();
@@ -137,9 +137,9 @@ public final class BattleScreen extends ScreenAdapter {
 
     private void switchParty(String name) {
         message.setText(name + " is ready to battle! The opponent takes a turn.");
-        game.state().playerHp = Math.min(GameConstants.PLAYER_MAX_HP,
-                game.state().playerHp + GameConstants.BENCH_HEAL_AMOUNT);
-        game.state().enemyHp = Math.max(0, game.state().enemyHp - GameConstants.BENCH_ATTACK_DAMAGE);
+        game.state().playerHp = Math.min(GameplayConstants.PLAYER_MAX_HP,
+                game.state().playerHp + GameplayConstants.BENCH_HEAL_AMOUNT);
+        game.state().enemyHp = Math.max(0, game.state().enemyHp - GameplayConstants.BENCH_ATTACK_DAMAGE);
         mode = "main";
         rebuildMenu();
     }
@@ -159,7 +159,7 @@ public final class BattleScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(BATTLE_BACKGROUND.r, BATTLE_BACKGROUND.g, BATTLE_BACKGROUND.b, BATTLE_BACKGROUND.a);
+        ScreenUtils.clear(BATTLE_BACKGROUND);
         SpriteBatch batch = game.batch();
         OrthographicCamera camera = new OrthographicCamera();
         camera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -181,8 +181,8 @@ public final class BattleScreen extends ScreenAdapter {
         batch.draw(enemySprite, Gdx.graphics.getWidth() * 0.68f, Gdx.graphics.getHeight() * 0.42f, 150, 123);
         batch.setColor(WHITE);
         batch.end();
-        playerHp.setText("EMBERFOX   " + game.state().playerHp + " / " + GameConstants.PLAYER_MAX_HP + " HP");
-        enemyHp.setText("MOSSLING   " + game.state().enemyHp + " / " + GameConstants.ENEMY_MAX_HP + " HP");
+        playerHp.setText("EMBERFOX   " + game.state().playerHp + " / " + GameplayConstants.PLAYER_MAX_HP + " HP");
+        enemyHp.setText("MOSSLING   " + game.state().enemyHp + " / " + GameplayConstants.ENEMY_MAX_HP + " HP");
         stage.act(delta);
         stage.draw();
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) runAway();
