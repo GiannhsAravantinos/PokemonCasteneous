@@ -1,23 +1,26 @@
 package com.pokemoncasteneous;
 
+import static com.pokemoncasteneous.cosntants.GameConstants.*;
+
 public final class GameState {
+    // Position in the overworld, measured in world pixels.
     public float playerX = 0f;
     public float playerY = 0f;
-    public int playerHp = 36;
-    public final int playerMaxHp = 36;
-    public int enemyHp = 28;
-    public final int enemyMaxHp = 28;
-    public int potions = 3;
-    public int partyCount = 3;
+
+    // These values change during play; their starting values and limits live in GameConstants.
+    public int playerHp = PLAYER_MAX_HP;
+    public int enemyHp = ENEMY_MAX_HP;
+    public int potions = STARTING_POTIONS;
+    public int partyCount = STARTING_PARTY_SIZE;
     public String message = "A wild Mossling appeared!";
 
     public void beginEncounter() {
-        enemyHp = enemyMaxHp;
+        enemyHp = ENEMY_MAX_HP;
         message = "A wild Mossling appeared!";
     }
 
     public void returnToOverworld() {
-        playerHp = playerMaxHp;
+        playerHp = PLAYER_MAX_HP;
         beginEncounter();
     }
 }

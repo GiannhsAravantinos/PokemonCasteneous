@@ -1,2 +1,2 @@
 rootProject.name = 'pokemon-casteneous'
-include 'core', 'lwjgl3'
+include 'constants', 'core', 'lwjgl3'
