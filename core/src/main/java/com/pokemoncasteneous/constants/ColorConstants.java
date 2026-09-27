@@ -1,4 +1,4 @@
-package com.pokemoncasteneous.cosntants;
+package com.pokemoncasteneous.constants;
 
 import com.badlogic.gdx.graphics.Color;
 

@@ -14,9 +14,9 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.pokemoncasteneous.PokemonGame;
-import com.pokemoncasteneous.cosntants.GameConstants;
+import com.pokemoncasteneous.constants.GameConstants;
 
-import static com.pokemoncasteneous.cosntants.ColorConstants.*;
+import static com.pokemoncasteneous.constants.ColorConstants.*;
 
 public final class BattleScreen extends ScreenAdapter {
     private final PokemonGame game;

@@ -3,7 +3,7 @@ package com.pokemoncasteneous;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.pokemoncasteneous.cosntants.ColorConstants;
+import com.pokemoncasteneous.constants.ColorConstants;
 import com.pokemoncasteneous.screens.OverworldScreen;
 
 public final class PokemonGame extends Game {

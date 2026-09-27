@@ -1,9 +1,9 @@
 package com.pokemoncasteneous;
 
-import static com.pokemoncasteneous.cosntants.GameConstants.*;
+import static com.pokemoncasteneous.constants.GameConstants.*;
 
 public final class GameState {
-    // Position in the overworld, measured in world pixels.
+    // Position in grid-square units; whole numbers mark the center of a square.
     public float playerX = 0f;
     public float playerY = 0f;
 
