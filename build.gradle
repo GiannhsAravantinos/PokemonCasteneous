@@ -1,0 +1,43 @@
+allprojects {
+    repositories {
+        mavenCentral()
+    }
+}
+
+ext {
+    gdxVersion = '1.13.1'
+}
+
+project(':core') {
+    apply plugin: 'java-library'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    dependencies {
+        api "com.badlogicgames.gdx:gdx:$gdxVersion"
+    }
+}
+
+project(':lwjgl3') {
+    apply plugin: 'application'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    application {
+        mainClass = 'com.pokemoncasteneous.lwjgl3.Lwjgl3Launcher'
+    }
+
+    dependencies {
+        implementation project(':core')
+        implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+        runtimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    }
+}

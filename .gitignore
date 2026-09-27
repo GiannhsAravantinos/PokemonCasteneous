@@ -1,0 +1,13 @@
+# Gradle cache and build output
+.gradle/
+**/build/
+
+# Maven build output
+**/target/
+
+# Compiled Java classes and IDE output
+*.class
+out/
+
+# IntelliJ IDEA project files
+.idea/
