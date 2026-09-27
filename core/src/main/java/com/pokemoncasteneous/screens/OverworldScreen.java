@@ -5,9 +5,11 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.Texture.TextureFilter;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -27,12 +29,19 @@ public final class OverworldScreen extends ScreenAdapter {
             GameConstants.VIEW_COLUMNS, GameConstants.VIEW_ROWS, hudCamera);
     private final ShapeRenderer shapes = new ShapeRenderer();
     private final BitmapFont font = new BitmapFont();
-    private final Texture playerTexture;
+    private final Texture fallbackPlayerTexture;
+    private final Texture grassTile;
+    private final Texture pathTile;
+    private final Texture treeSprite;
+    private Texture playerSheet;
+    private final TextureRegion[][] playerFrames;
     private float startX;
     private float startY;
     private float targetX;
     private float targetY;
     private float stepProgress;
+    private float animationTime;
+    private int facingRow;
     private boolean moving;
 
     public OverworldScreen(PokemonGame game) {
@@ -41,16 +50,29 @@ public final class OverworldScreen extends ScreenAdapter {
         pixmap.setColor(PLAYER_TUNIC); pixmap.fillRectangle(7, 0, 18, 24);
         pixmap.setColor(PLAYER_SKIN); pixmap.fillCircle(16, 31, 9);
         pixmap.setColor(PLAYER_TUNIC); pixmap.fillRectangle(7, 15, 18, 4);
-        playerTexture = new Texture(pixmap);
+        fallbackPlayerTexture = new Texture(pixmap);
         pixmap.dispose();
         font.getData().setScale(0.08f);
+
+        grassTile = loadOptionalTexture("grass.png");
+        pathTile = loadOptionalTexture("dirt.png");
+        treeSprite = loadOptionalTexture("tree.png");
+        playerSheet = loadOptionalTexture("player.png");
+        if (playerSheet != null && playerSheet.getWidth() == 128 && playerSheet.getHeight() == 128) {
+            playerFrames = TextureRegion.split(playerSheet, 32, 32);
+        } else {
+            if (playerSheet != null) playerSheet.dispose();
+            playerSheet = null;
+            playerFrames = null;
+        }
     }
 
     @Override
     public void render(float delta) {
         updateMovement(delta);
+        animationTime = moving ? animationTime + delta : 0f;
 
-        // The viewport maps the fixed 64-by-36 world grid onto the window and keeps its 16:9 shape.
+        // The viewport maps the fixed logical grid onto the window and keeps its 16:9 shape.
         worldViewport.apply();
         // The half-square camera offset puts the viewport edges on tile boundaries when the player rests.
         camera.position.set(game.state().playerX + 0.5f, game.state().playerY + 0.5f, 0);
@@ -58,25 +80,27 @@ public final class OverworldScreen extends ScreenAdapter {
 
         ScreenUtils.clear(OVERWORLD_GRASS.r, OVERWORLD_GRASS.g, OVERWORLD_GRASS.b, OVERWORLD_GRASS.a);
         shapes.setProjectionMatrix(camera.combined);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        drawGroundGrid();
-        drawTrees();
-        shapes.end();
-
-        SpriteBatch batch = game.batch();
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        batch.draw(playerTexture,
-                game.state().playerX - GameConstants.PLAYER_SPRITE_WIDTH / 2f,
-                game.state().playerY - GameConstants.PLAYER_SPRITE_HEIGHT / 2f,
-                GameConstants.PLAYER_SPRITE_WIDTH,
-                GameConstants.PLAYER_SPRITE_HEIGHT);
-        batch.end();
+        if (grassTile == null || pathTile == null) {
+            shapes.begin(ShapeRenderer.ShapeType.Filled);
+            drawGroundGrid();
+            shapes.end();
+        } else {
+            drawGroundSprites();
+        }
+        if (treeSprite == null) {
+            shapes.begin(ShapeRenderer.ShapeType.Filled);
+            drawTrees();
+            shapes.end();
+        } else {
+            drawTreeSprites();
+        }
+        drawPlayer();
 
         // HUD coordinates use the same virtual grid, but stay fixed while the world camera follows the player.
         hudViewport.apply();
         hudCamera.position.set(GameConstants.VIEW_COLUMNS / 2f, GameConstants.VIEW_ROWS / 2f, 0);
         hudCamera.update();
+        SpriteBatch batch = game.batch();
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
         font.setColor(HUD_TEXT);
@@ -103,6 +127,10 @@ public final class OverworldScreen extends ScreenAdapter {
 
         // Movement is one cell at a time; releasing a key finishes the current step on its destination cell.
         if (dx != 0 && dy != 0) dx = 0;
+        if (dx < 0) facingRow = 1;
+        else if (dx > 0) facingRow = 2;
+        else if (dy > 0) facingRow = 3;
+        else if (dy < 0) facingRow = 0;
         float timeLeft = delta;
         while (timeLeft > 0f && (moving || dx != 0 || dy != 0)) {
             if (!moving) {
@@ -163,9 +191,75 @@ public final class OverworldScreen extends ScreenAdapter {
         }
     }
 
+    private Texture loadOptionalTexture(String path) {
+        if (!Gdx.files.internal(path).exists()) return null;
+        Texture texture = new Texture(Gdx.files.internal(path));
+        texture.setFilter(TextureFilter.Nearest, TextureFilter.Nearest);
+        return texture;
+    }
+
+    private void drawGroundSprites() {
+        SpriteBatch batch = game.batch();
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        int firstX = MathUtils.floor(camera.position.x - GameConstants.VIEW_COLUMNS / 2f) - 1;
+        int lastX = MathUtils.floor(camera.position.x + GameConstants.VIEW_COLUMNS / 2f) + 1;
+        int firstY = MathUtils.floor(camera.position.y - GameConstants.VIEW_ROWS / 2f) - 1;
+        int lastY = MathUtils.floor(camera.position.y + GameConstants.VIEW_ROWS / 2f) + 1;
+        for (int x = firstX; x <= lastX; x++) {
+            for (int y = firstY; y <= lastY; y++) {
+                Texture tile = x == 0 || y == 0 ? pathTile : grassTile;
+                batch.draw(tile, x - 0.5f, y - 0.5f, 1f, 1f);
+            }
+        }
+        batch.end();
+    }
+
+    private void drawTreeSprites() {
+        SpriteBatch batch = game.batch();
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        int firstX = MathUtils.floor(camera.position.x - GameConstants.VIEW_COLUMNS / 2f) - 1;
+        int lastX = MathUtils.floor(camera.position.x + GameConstants.VIEW_COLUMNS / 2f) + 1;
+        int firstY = MathUtils.floor(camera.position.y - GameConstants.VIEW_ROWS / 2f) - 1;
+        int lastY = MathUtils.floor(camera.position.y + GameConstants.VIEW_ROWS / 2f) + 1;
+        for (int x = firstX; x <= lastX; x++) {
+            for (int y = firstY; y <= lastY; y++) {
+                if ((x == 0 || y == 0) || Math.floorMod(x * 7 + y * 3, 11) != 0) continue;
+                batch.draw(treeSprite, x - 0.5f, y - 0.5f, 1f, 1.5f);
+            }
+        }
+        batch.end();
+    }
+
+    private void drawPlayer() {
+        SpriteBatch batch = game.batch();
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        float x = game.state().playerX - GameConstants.PLAYER_SPRITE_WIDTH / 2f;
+        float y = game.state().playerY - GameConstants.PLAYER_SPRITE_HEIGHT / 2f;
+        if (playerFrames == null) {
+            batch.draw(fallbackPlayerTexture, x, y,
+                    GameConstants.PLAYER_SPRITE_WIDTH, GameConstants.PLAYER_SPRITE_HEIGHT);
+        } else {
+            int frame = moving ? 1 + (int) (animationTime / 0.12f) % 3 : 0;
+            batch.draw(playerFrames[facingRow][frame], x, y,
+                    GameConstants.PLAYER_SPRITE_WIDTH, GameConstants.PLAYER_SPRITE_HEIGHT);
+        }
+        batch.end();
+    }
+
     @Override public void resize(int width, int height) {
         worldViewport.update(width, height, true);
         hudViewport.update(width, height, true);
     }
-    @Override public void dispose() { shapes.dispose(); font.dispose(); playerTexture.dispose(); }
+    @Override public void dispose() {
+        shapes.dispose();
+        font.dispose();
+        fallbackPlayerTexture.dispose();
+        if (grassTile != null) grassTile.dispose();
+        if (pathTile != null) pathTile.dispose();
+        if (treeSprite != null) treeSprite.dispose();
+        if (playerSheet != null) playerSheet.dispose();
+    }
 }

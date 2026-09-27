@@ -6,8 +6,8 @@ public final class GameConstants {
     public static final int VIEW_ROWS = 18;
     // Movement speed is measured in grid squares per second.
     public static final float PLAYER_MOVE_SPEED = 3f;
-    public static final float PLAYER_SPRITE_WIDTH = 0.65f;
-    public static final float PLAYER_SPRITE_HEIGHT = 0.85f;
+    public static final float PLAYER_SPRITE_WIDTH = 1f;
+    public static final float PLAYER_SPRITE_HEIGHT = 1f;
     public static final int PLAYER_MAX_HP = 36;
     public static final int ENEMY_MAX_HP = 28;
     public static final int STARTING_POTIONS = 3;
