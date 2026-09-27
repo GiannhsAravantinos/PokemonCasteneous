@@ -12,7 +12,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
-import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.pokemoncasteneous.PokemonGame;
@@ -36,7 +35,7 @@ public final class BattleScreen extends ScreenAdapter {
         Pixmap px = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         px.setColor(new Color(0.09f, 0.14f, 0.18f, 0.94f)); px.fill();
         Texture panel = new Texture(px); px.dispose();
-        skin.add("panel", new TextureRegionDrawable(new com.badlogic.gdx.graphics.g2d.TextureRegion(panel)));
+        skin.add("panel", panel, Texture.class);
         Label.LabelStyle labelStyle = new Label.LabelStyle(font, Color.WHITE);
         skin.add("default", labelStyle);
         TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
