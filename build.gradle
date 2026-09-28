@@ -6,6 +6,7 @@ allprojects {
 
 ext {
     gdxVersion = '1.13.1'
+    lombokVersion = '1.18.38'
 }
 
 project(':core') {
@@ -19,6 +20,8 @@ project(':core') {
 
     dependencies {
         api "com.badlogicgames.gdx:gdx:$gdxVersion"
+        compileOnly "org.projectlombok:lombok:$lombokVersion"
+        annotationProcessor "org.projectlombok:lombok:$lombokVersion"
     }
 }
 
