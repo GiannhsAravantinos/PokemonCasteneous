@@ -15,6 +15,7 @@ import com.pokemoncasteneous.assets.OverworldTextures;
 import com.pokemoncasteneous.assets.Tile;
 import com.pokemoncasteneous.constants.GameplayConstants;
 import com.pokemoncasteneous.constants.UiConstants;
+import com.pokemoncasteneous.utils.IndexUtils;
 import com.pokemoncasteneous.utils.ScreenUtils;
 
 import static com.pokemoncasteneous.constants.ColorConstants.*;
@@ -139,25 +140,25 @@ public final class OverworldScreen extends ScreenAdapter {
         int firstY = Math.max(0, MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1);
         int lastY = Math.min(overworldMap.height() - 1, MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1);
 
-        for (int y = firstY; y <= lastY; y++) {
-            for (int x = firstX; x <= lastX; x++) {
-                Tile tile = overworldMap.tileAt(x, y);
-                Tile ground = tile.isForeground() ? overworldMap.tileDefinition(tile.underlayId()) : tile;
-                Texture groundTexture = textures.textureFor(ground);
-                if (groundTexture != null) batch.draw(groundTexture, x - 0.5f, y - 0.5f, 1f, 1f);
+        IndexUtils.cartesianIndices(firstX, lastX, firstY, lastY).forEach(index -> {
+            Tile tile = overworldMap.tileAt(index.x(), index.y());
+            Tile ground = tile.isForeground() ? overworldMap.tileDefinition(tile.underlayId()) : tile;
+            Texture groundTexture = textures.textureFor(ground);
+            if (groundTexture != null) {
+                batch.draw(groundTexture, index.x() - 0.5f, index.y() - 0.5f, 1f, 1f);
             }
-        }
-        for (int y = firstY; y <= lastY; y++) {
-            for (int x = firstX; x <= lastX; x++) {
-                Tile tile = overworldMap.tileAt(x, y);
-                if (!tile.isForeground()) continue;
-                Texture sprite = textures.textureFor(tile);
-                if (sprite != null) {
-                    batch.draw(sprite, x - 0.5f, y - 0.5f,
-                            UiConstants.TREE_SPRITE_WIDTH, UiConstants.TREE_SPRITE_HEIGHT);
-                }
-            }
-        }
+        });
+        IndexUtils.cartesianIndices(firstX, lastX, firstY, lastY)
+                .map(index -> new TileAt(index, overworldMap.tileAt(index.x(), index.y())))
+                .filter(tileAt -> tileAt.tile().isForeground())
+                .forEach(tileAt -> {
+                    Texture sprite = textures.textureFor(tileAt.tile());
+                    if (sprite != null) {
+                        IndexUtils.CartesianIndex index = tileAt.index();
+                        batch.draw(sprite, index.x() - 0.5f, index.y() - 0.5f,
+                                UiConstants.TREE_SPRITE_WIDTH, UiConstants.TREE_SPRITE_HEIGHT);
+                    }
+                });
         batch.end();
     }
 
@@ -185,4 +186,6 @@ public final class OverworldScreen extends ScreenAdapter {
         font.dispose();
         textures.dispose();
     }
+
+    private record TileAt(IndexUtils.CartesianIndex index, Tile tile) { }
 }
