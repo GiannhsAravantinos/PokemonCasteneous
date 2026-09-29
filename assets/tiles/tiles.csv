@@ -1,0 +1,4 @@
+id,image,isOverworld,isForeground,underlayId
+00,grass.png,true,false,
+01,dirt.png,true,false,
+02,tree.png,true,true,00

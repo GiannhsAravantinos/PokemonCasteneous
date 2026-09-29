@@ -6,6 +6,7 @@ public final class GameState {
     // Position in grid-square units; whole numbers mark the center of a square.
     public float playerX = 0f;
     public float playerY = 0f;
+    public boolean overworldPositionInitialized;
 
     // These values change during play; their starting values and limits live in GameplayConstants.
     public int playerHp = PLAYER_MAX_HP;

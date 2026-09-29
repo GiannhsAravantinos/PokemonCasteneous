@@ -7,11 +7,12 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.pokemoncasteneous.PokemonGame;
+import com.pokemoncasteneous.assets.OverworldMap;
 import com.pokemoncasteneous.assets.OverworldTextures;
+import com.pokemoncasteneous.assets.Tile;
 import com.pokemoncasteneous.constants.GameplayConstants;
 import com.pokemoncasteneous.constants.UiConstants;
 import com.pokemoncasteneous.utils.ScreenUtils;
@@ -26,8 +27,8 @@ public final class OverworldScreen extends ScreenAdapter {
             UiConstants.VIEW_COLUMNS, UiConstants.VIEW_ROWS, camera);
     private final FitViewport hudViewport = new FitViewport(
             UiConstants.VIEW_COLUMNS, UiConstants.VIEW_ROWS, hudCamera);
-    private final ShapeRenderer shapes = new ShapeRenderer();
     private final BitmapFont font = new BitmapFont();
+    private final OverworldMap overworldMap;
     private final OverworldTextures textures;
     private float startX;
     private float startY;
@@ -40,7 +41,13 @@ public final class OverworldScreen extends ScreenAdapter {
 
     public OverworldScreen(PokemonGame game) {
         this.game = game;
-        textures = new OverworldTextures();
+        overworldMap = new OverworldMap("maps/overworld.map");
+        textures = new OverworldTextures(overworldMap.tileCatalog());
+        if (!game.state().overworldPositionInitialized) {
+            game.state().playerX = overworldMap.width() / 2;
+            game.state().playerY = (overworldMap.height() - 1) / 2;
+            game.state().overworldPositionInitialized = true;
+        }
         font.getData().setScale(0.08f);
     }
 
@@ -56,21 +63,7 @@ public final class OverworldScreen extends ScreenAdapter {
         camera.update();
 
         ScreenUtils.clear(OVERWORLD_GRASS);
-        shapes.setProjectionMatrix(camera.combined);
-        if (textures.grassTile == null || textures.pathTile == null) {
-            shapes.begin(ShapeRenderer.ShapeType.Filled);
-            drawGroundGrid();
-            shapes.end();
-        } else {
-            drawGroundSprites();
-        }
-        if (textures.treeSprite == null) {
-            shapes.begin(ShapeRenderer.ShapeType.Filled);
-            drawTrees();
-            shapes.end();
-        } else {
-            drawTreeSprites();
-        }
+        drawMap();
         drawPlayer();
 
         // HUD coordinates use the same virtual grid, but stay fixed while the world camera follows the player.
@@ -113,8 +106,9 @@ public final class OverworldScreen extends ScreenAdapter {
             if (!moving) {
                 startX = Math.round(game.state().playerX);
                 startY = Math.round(game.state().playerY);
-                targetX = startX + dx;
-                targetY = startY + dy;
+                targetX = MathUtils.clamp(startX + dx, 0, overworldMap.width() - 1);
+                targetY = MathUtils.clamp(startY + dy, 0, overworldMap.height() - 1);
+                if (targetX == startX && targetY == startY) break;
                 stepProgress = 0f;
                 moving = true;
             }
@@ -136,68 +130,32 @@ public final class OverworldScreen extends ScreenAdapter {
         }
     }
 
-    private void drawGroundGrid() {
-        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
-
-        for (int x = firstX; x <= lastX; x++) {
-            for (int y = firstY; y <= lastY; y++) {
-                if (x == 0 || y == 0) shapes.setColor(PATH_SAND);
-                else shapes.setColor(((x + y) & 1) == 0 ? GRASS_TILE_LIGHT : GRASS_TILE_SHADE);
-                shapes.rect(x - 0.5f, y - 0.5f, 1f, 1f);
-            }
-        }
-    }
-
-    private void drawTrees() {
-        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
-
-        for (int x = firstX; x <= lastX; x++) {
-            for (int y = firstY; y <= lastY; y++) {
-                if ((x == 0 || y == 0) || Math.floorMod(x * 7 + y * 3, 11) != 0) continue;
-                shapes.setColor(TREE_TRUNK);
-                shapes.rect(x - 0.08f, y - 0.38f, 0.16f, 0.38f);
-                shapes.setColor(TREE_FOLIAGE);
-                shapes.circle(x, y + 0.08f, 0.36f);
-            }
-        }
-    }
-
-    private void drawGroundSprites() {
+    private void drawMap() {
         SpriteBatch batch = game.batch();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
-        for (int x = firstX; x <= lastX; x++) {
-            for (int y = firstY; y <= lastY; y++) {
-                Texture tile = x == 0 || y == 0 ? textures.pathTile : textures.grassTile;
-                batch.draw(tile, x - 0.5f, y - 0.5f, 1f, 1f);
+        int firstX = Math.max(0, MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1);
+        int lastX = Math.min(overworldMap.width() - 1, MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1);
+        int firstY = Math.max(0, MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1);
+        int lastY = Math.min(overworldMap.height() - 1, MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1);
+
+        for (int y = firstY; y <= lastY; y++) {
+            for (int x = firstX; x <= lastX; x++) {
+                Tile tile = overworldMap.tileAt(x, y);
+                Tile ground = tile.isForeground() ? overworldMap.tileDefinition(tile.underlayId()) : tile;
+                Texture groundTexture = textures.textureFor(ground);
+                if (groundTexture != null) batch.draw(groundTexture, x - 0.5f, y - 0.5f, 1f, 1f);
             }
         }
-        batch.end();
-    }
-
-    private void drawTreeSprites() {
-        SpriteBatch batch = game.batch();
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        int firstX = MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1;
-        int lastX = MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1;
-        int firstY = MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1;
-        int lastY = MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1;
-        for (int x = firstX; x <= lastX; x++) {
-            for (int y = firstY; y <= lastY; y++) {
-                if ((x == 0 || y == 0) || Math.floorMod(x * 7 + y * 3, 11) != 0) continue;
-                batch.draw(textures.treeSprite, x - 0.5f, y - 0.5f,
-                        UiConstants.TREE_SPRITE_WIDTH, UiConstants.TREE_SPRITE_HEIGHT);
+        for (int y = firstY; y <= lastY; y++) {
+            for (int x = firstX; x <= lastX; x++) {
+                Tile tile = overworldMap.tileAt(x, y);
+                if (!tile.isForeground()) continue;
+                Texture sprite = textures.textureFor(tile);
+                if (sprite != null) {
+                    batch.draw(sprite, x - 0.5f, y - 0.5f,
+                            UiConstants.TREE_SPRITE_WIDTH, UiConstants.TREE_SPRITE_HEIGHT);
+                }
             }
         }
         batch.end();
@@ -224,7 +182,6 @@ public final class OverworldScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
-        shapes.dispose();
         font.dispose();
         textures.dispose();
     }
