@@ -13,8 +13,11 @@ import com.pokemoncasteneous.PokemonGame;
 import com.pokemoncasteneous.assets.OverworldMap;
 import com.pokemoncasteneous.assets.OverworldTextures;
 import com.pokemoncasteneous.assets.Tile;
-import com.pokemoncasteneous.constants.GameplayConstants;
 import com.pokemoncasteneous.constants.UiConstants;
+import com.pokemoncasteneous.overworld.GridPosition;
+import com.pokemoncasteneous.overworld.MovementInput;
+import com.pokemoncasteneous.overworld.OverworldMovementController;
+import com.pokemoncasteneous.overworld.PlayerPosition;
 import com.pokemoncasteneous.utils.IndexUtils;
 import com.pokemoncasteneous.utils.ScreenUtils;
 
@@ -31,36 +34,32 @@ public final class OverworldScreen extends ScreenAdapter {
     private final BitmapFont font = new BitmapFont();
     private final OverworldMap overworldMap;
     private final OverworldTextures textures;
-    private float startX;
-    private float startY;
-    private float targetX;
-    private float targetY;
-    private float stepProgress;
+    private final OverworldMovementController movementController;
     private float animationTime;
-    private int facingRow;
-    private boolean moving;
 
     public OverworldScreen(PokemonGame game) {
         this.game = game;
         overworldMap = new OverworldMap("maps/overworld.map");
         textures = new OverworldTextures(overworldMap.tileCatalog());
         if (!game.state().overworldPositionInitialized) {
-            game.state().playerX = overworldMap.width() / 2;
-            game.state().playerY = (overworldMap.height() - 1) / 2;
+            game.state().playerPosition = PlayerPosition.at(
+                    new GridPosition(overworldMap.width() / 2, (overworldMap.height() - 1) / 2));
             game.state().overworldPositionInitialized = true;
         }
+        movementController = new OverworldMovementController(game.state(), overworldMap);
         font.getData().setScale(0.08f);
     }
 
     @Override
     public void render(float delta) {
-        updateMovement(delta);
-        animationTime = moving ? animationTime + delta : 0f;
+        movementController.updateMovementFunctionality(delta, movementInput());
+        animationTime = movementController.isMoving() ? animationTime + delta : 0f;
 
         // The viewport maps the fixed logical grid onto the window and keeps its 16:9 shape.
         worldViewport.apply();
         // The half-square camera offset puts the viewport edges on tile boundaries when the player rests.
-        camera.position.set(game.state().playerX + 0.5f, game.state().playerY + 0.5f, 0);
+        PlayerPosition playerPosition = game.state().playerPosition;
+        camera.position.set(playerPosition.x() + 0.5f, playerPosition.y() + 0.5f, 0);
         camera.update();
 
         ScreenUtils.clear(OVERWORLD_GRASS);
@@ -88,47 +87,14 @@ public final class OverworldScreen extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) Gdx.app.exit();
     }
 
-    private void updateMovement(float delta) {
+    private MovementInput movementInput() {
         boolean left = Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A);
         boolean right = Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
         boolean up = Gdx.input.isKeyPressed(Input.Keys.UP) || Gdx.input.isKeyPressed(Input.Keys.W);
         boolean down = Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S);
         int dx = left == right ? 0 : (right ? 1 : -1);
         int dy = down == up ? 0 : (up ? 1 : -1);
-
-        // Movement is one cell at a time; releasing a key finishes the current step on its destination cell.
-        if (dx != 0 && dy != 0) dx = 0;
-        if (dx < 0) facingRow = 1;
-        else if (dx > 0) facingRow = 2;
-        else if (dy > 0) facingRow = 3;
-        else if (dy < 0) facingRow = 0;
-        float timeLeft = delta;
-        while (timeLeft > 0f && (moving || dx != 0 || dy != 0)) {
-            if (!moving) {
-                startX = Math.round(game.state().playerX);
-                startY = Math.round(game.state().playerY);
-                targetX = MathUtils.clamp(startX + dx, 0, overworldMap.width() - 1);
-                targetY = MathUtils.clamp(startY + dy, 0, overworldMap.height() - 1);
-                if (targetX == startX && targetY == startY) break;
-                stepProgress = 0f;
-                moving = true;
-            }
-
-            float timeForStep = (1f - stepProgress) / GameplayConstants.PLAYER_MOVE_SPEED;
-            float stepTime = Math.min(timeLeft, timeForStep);
-            stepProgress = Math.min(1f, stepProgress + stepTime * GameplayConstants.PLAYER_MOVE_SPEED);
-            timeLeft -= stepTime;
-            game.state().playerX = startX + (targetX - startX) * stepProgress;
-            game.state().playerY = startY + (targetY - startY) * stepProgress;
-
-            if (stepProgress >= 1f) {
-                game.state().playerX = targetX;
-                game.state().playerY = targetY;
-                moving = false;
-                stepProgress = 0f;
-                if (dx == 0 && dy == 0) break;
-            }
-        }
+        return new MovementInput(dx, dy);
     }
 
     private void drawMap() {
@@ -142,7 +108,7 @@ public final class OverworldScreen extends ScreenAdapter {
 
         IndexUtils.cartesianIndices(firstX, lastX, firstY, lastY).forEach(index -> {
             Tile tile = overworldMap.tileAt(index.x(), index.y());
-            Tile ground = tile.isForeground() ? overworldMap.tileDefinition(tile.underlayId()) : tile;
+            Tile ground = tile.isForeground() ? overworldMap.tileDefinition(tile.getUnderlayId()) : tile;
             Texture groundTexture = textures.textureFor(ground);
             if (groundTexture != null) {
                 batch.draw(groundTexture, index.x() - 0.5f, index.y() - 0.5f, 1f, 1f);
@@ -166,11 +132,13 @@ public final class OverworldScreen extends ScreenAdapter {
         SpriteBatch batch = game.batch();
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        float x = game.state().playerX - UiConstants.PLAYER_SPRITE_WIDTH / 2f;
-        float y = game.state().playerY - UiConstants.PLAYER_SPRITE_HEIGHT / 2f;
+        PlayerPosition playerPosition = game.state().playerPosition;
+        float x = playerPosition.x() - UiConstants.PLAYER_SPRITE_WIDTH / 2f;
+        float y = playerPosition.y() - UiConstants.PLAYER_SPRITE_HEIGHT / 2f;
 
-        int frame = moving ? 1 + (int) (animationTime / UiConstants.PLAYER_WALK_FRAME_SECONDS) % 3 : 0;
-        batch.draw(textures.playerFrames[facingRow][frame], x, y, UiConstants.PLAYER_SPRITE_WIDTH, UiConstants.PLAYER_SPRITE_HEIGHT);
+        int frame = movementController.isMoving() ? 1 + (int) (animationTime / UiConstants.PLAYER_WALK_FRAME_SECONDS) % 3 : 0;
+        batch.draw(textures.playerFrames[movementController.facing().spriteRow()][frame],
+                x, y, UiConstants.PLAYER_SPRITE_WIDTH, UiConstants.PLAYER_SPRITE_HEIGHT);
 
         batch.end();
     }

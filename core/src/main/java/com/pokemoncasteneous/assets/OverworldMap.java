@@ -2,6 +2,7 @@ package com.pokemoncasteneous.assets;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
+import com.pokemoncasteneous.overworld.GridPosition;
 import com.pokemoncasteneous.utils.IndexUtils;
 
 import java.util.Arrays;
@@ -58,6 +59,12 @@ public final class OverworldMap {
     public int width() { return width; }
     public int height() { return height; }
     public Tile tileAt(int x, int y) { return tiles[x][y]; }
+    public boolean contains(GridPosition position) {
+        return position.x() >= 0 && position.x() < width && position.y() >= 0 && position.y() < height;
+    }
+    public boolean isTraversable(GridPosition position) {
+        return contains(position) && tileAt(position.x(), position.y()).isTraversable();
+    }
     public TileCatalog tileCatalog() { return tileCatalog; }
     public Tile tileDefinition(int id) { return tileCatalog.tileById(id); }
 }

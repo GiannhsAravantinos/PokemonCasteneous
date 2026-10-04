@@ -1,11 +1,12 @@
 package com.pokemoncasteneous;
 
+import com.pokemoncasteneous.overworld.PlayerPosition;
+
 import static com.pokemoncasteneous.constants.GameplayConstants.*;
 
 public final class GameState {
     // Position in grid-square units; whole numbers mark the center of a square.
-    public float playerX = 0f;
-    public float playerY = 0f;
+    public PlayerPosition playerPosition = new PlayerPosition(0f, 0f);
     public boolean overworldPositionInitialized;
 
     // These values change during play; their starting values and limits live in GameplayConstants.

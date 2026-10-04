@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public final class TileCatalog {
-    private static final String[] CSV_HEADER = {"id", "image", "isOverworld", "isForeground", "underlayId"};
+    private static final String[] CSV_HEADER = {"id", "image", "isOverworld", "isForeground", "isTraversable", "underlayId"};
 
     private final Map<Integer, Tile> tilesById;
 
@@ -41,18 +41,19 @@ public final class TileCatalog {
 
         Stream.of(contentLines).skip(1).forEach(line -> {
             String[] columns = line.text().split(",", -1);
-            if (columns.length != CSV_HEADER.length) throw catalogError(line, "Expected five CSV columns");
+            if (columns.length != CSV_HEADER.length) throw catalogError(line, "Expected six CSV columns");
             try {
                 int id = parseId(columns[0]);
                 String image = columns[1].trim();
                 if (image.isEmpty()) throw new IllegalArgumentException("Image filename is empty");
                 boolean isOverworld = parseBoolean(columns[2]);
                 boolean isForeground = parseBoolean(columns[3]);
-                int underlayId = columns[4].trim().isEmpty() ? -1 : parseId(columns[4]);
+                boolean isTraversable = parseBoolean(columns[4]);
+                int underlayId = columns[5].trim().isEmpty() ? -1 : parseId(columns[5]);
                 if (isForeground && (!isOverworld || underlayId < 0)) {
                     throw new IllegalArgumentException("Foreground overworld tiles need an underlay ID");
                 }
-                Tile tile = new Tile(id, image, isOverworld, isForeground, underlayId);
+                Tile tile = new Tile(id, image, isOverworld, isForeground, isTraversable, underlayId);
                 if (tiles.put(id, tile) != null) throw new IllegalArgumentException("Duplicate tile ID");
             } catch (IllegalArgumentException exception) {
                 throw catalogError(line, exception.getMessage(), exception);
@@ -60,10 +61,10 @@ public final class TileCatalog {
         });
 
         tiles.values().stream().filter(Tile::isForeground).forEach(tile -> {
-            Tile underlay = tiles.get(tile.underlayId());
+            Tile underlay = tiles.get(tile.getUnderlayId());
             if (underlay == null || !underlay.isOverworld()) {
                 throw new IllegalStateException(String.format(
-                        "Tile %02X references an invalid overworld underlay %02X", tile.id(), tile.underlayId()));
+                        "Tile %02X references an invalid overworld underlay %02X", tile.getId(), tile.getUnderlayId()));
             }
         });
         return new TileCatalog(tiles);

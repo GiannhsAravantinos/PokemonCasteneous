@@ -20,7 +20,7 @@ public final class OverworldTextures implements Disposable {
     public OverworldTextures(TileCatalog tileCatalog) {
         tileCatalog.tilesById().values().stream()
                 .filter(Tile::isOverworld)
-                .forEach(tile -> tileTextures.put(tile.id(), loadOptional("tiles/" + tile.image())));
+                .forEach(tile -> tileTextures.put(tile.getId(), loadOptional("tiles/" + tile.getImage())));
 
         Texture loadedPlayerSheet = loadOptional("player.png");
         boolean sheetMatchesSpecs = loadedPlayerSheet != null
@@ -35,7 +35,7 @@ public final class OverworldTextures implements Disposable {
     }
 
     public Texture textureFor(Tile tile) {
-        return tileTextures.get(tile.id());
+        return tileTextures.get(tile.getId());
     }
 
     private static Texture loadOptional(String path) {
