@@ -13,6 +13,7 @@ import com.pokemoncasteneous.PokemonGame;
 import com.pokemoncasteneous.assets.OverworldMap;
 import com.pokemoncasteneous.assets.OverworldTextures;
 import com.pokemoncasteneous.assets.Tile;
+import com.pokemoncasteneous.constants.GameplayConstants;
 import com.pokemoncasteneous.constants.UiConstants;
 import com.pokemoncasteneous.overworld.GridPosition;
 import com.pokemoncasteneous.overworld.MovementInput;
@@ -75,11 +76,11 @@ public final class OverworldScreen extends ScreenAdapter {
         batch.begin();
         font.setColor(HUD_TEXT);
         font.draw(batch, "FERNWOOD  /  ROUTE 01", 1, UiConstants.VIEW_ROWS - 1);
-        font.draw(batch, "WASD / ARROWS  MOVE       ENTER  ENCOUNTER", 1, 1);
+        font.draw(batch, "WASD / ARROWS  MOVE   ENTER  ENCOUNTER", 1, 1);
         batch.end();
 
         // Enter starts the encounter and hands control to the battle screen.
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             game.state().beginEncounter();
             game.getScreen().dispose();
             game.setScreen(new BattleScreen(game));
@@ -94,7 +95,10 @@ public final class OverworldScreen extends ScreenAdapter {
         boolean down = Gdx.input.isKeyPressed(Input.Keys.DOWN) || Gdx.input.isKeyPressed(Input.Keys.S);
         int dx = left == right ? 0 : (right ? 1 : -1);
         int dy = down == up ? 0 : (up ? 1 : -1);
-        return new MovementInput(dx, dy);
+        int speedMultiplier = Gdx.input.isKeyPressed(Input.Keys.SPACE)
+                ? GameplayConstants.PLAYER_RUN_SPEED_MULTIPLIER
+                : GameplayConstants.PLAYER_WALK_SPEED_MULTIPLIER;
+        return new MovementInput(dx, dy, speedMultiplier);
     }
 
     private void drawMap() {

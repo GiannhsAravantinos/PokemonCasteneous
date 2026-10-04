@@ -1,7 +1,15 @@
 package com.pokemoncasteneous.overworld;
 
-public record MovementInput(int dx, int dy) {
+import com.pokemoncasteneous.constants.GameplayConstants;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+
+public record MovementInput(int dx, int dy, int speedMultiplier) {
     public static final MovementInput NONE = new MovementInput(0, 0);
+
+    public MovementInput(int dx, int dy) {
+        this(dx, dy, GameplayConstants.PLAYER_WALK_SPEED_MULTIPLIER);
+    }
 
     public MovementInput {
         dx = Integer.compare(dx, 0);

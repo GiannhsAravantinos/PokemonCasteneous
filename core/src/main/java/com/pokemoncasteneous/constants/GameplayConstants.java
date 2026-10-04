@@ -2,6 +2,8 @@ package com.pokemoncasteneous.constants;
 
 public final class GameplayConstants {
     public static final float PLAYER_MOVE_SPEED = 3f;
+    public static final int PLAYER_WALK_SPEED_MULTIPLIER = 1;
+    public static final int PLAYER_RUN_SPEED_MULTIPLIER = 2;
 
     public static final int PLAYER_MAX_HP = 36;
     public static final int ENEMY_MAX_HP = 28;

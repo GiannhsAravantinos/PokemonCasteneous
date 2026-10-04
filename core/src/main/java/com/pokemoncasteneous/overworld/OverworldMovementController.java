@@ -24,6 +24,7 @@ public final class OverworldMovementController {
             facing = inputFacing;
         }
 
+        float moveSpeed = GameplayConstants.PLAYER_MOVE_SPEED * input.speedMultiplier();
         float timeLeft = delta;
         while (timeLeft > 0f && (moving || input.isMoving())) {
             if (!moving && !beginStep(input)) {
@@ -31,9 +32,9 @@ public final class OverworldMovementController {
                 break;
             }
 
-            float timeForStep = (1f - stepProgress) / GameplayConstants.PLAYER_MOVE_SPEED;
+            float timeForStep = (1f - stepProgress) / moveSpeed;
             float stepTime = Math.min(timeLeft, timeForStep);
-            stepProgress = Math.min(1f, stepProgress + stepTime * GameplayConstants.PLAYER_MOVE_SPEED);
+            stepProgress = Math.min(1f, stepProgress + stepTime * moveSpeed);
             timeLeft -= stepTime;
             gameState.playerPosition = startPosition.interpolate(targetPosition, stepProgress);
 
