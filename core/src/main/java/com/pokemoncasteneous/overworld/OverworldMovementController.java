@@ -27,6 +27,7 @@ public final class OverworldMovementController {
         float timeLeft = delta;
         while (timeLeft > 0f && (moving || input.isMoving())) {
             if (!moving && !beginStep(input)) {
+                // No step starts when the target tile is blocked or outside the map.
                 break;
             }
 
@@ -41,6 +42,7 @@ public final class OverworldMovementController {
                 moving = false;
                 stepProgress = 0f;
                 if (!input.isMoving()) {
+                    // Stop after landing when the player is no longer pressing a direction.
                     break;
                 }
             }

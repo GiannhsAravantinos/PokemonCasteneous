@@ -4,10 +4,17 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.pokemoncasteneous.overworld.GridPosition;
 import com.pokemoncasteneous.utils.IndexUtils;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Data
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public final class OverworldMap {
     private final TileCatalog tileCatalog;
     private final Tile[][] tiles;
@@ -19,6 +26,7 @@ public final class OverworldMap {
         FileHandle file = Gdx.files.internal(fileName);
         if (!file.exists()) throw new IllegalStateException("Missing overworld map: " + fileName);
 
+        // Parse non-comment map rows into tile ID columns.
         List<String[]> rows = Arrays.stream(file.readString().split("\\R"))
                 .map(String::trim)
                 .filter(row -> !row.isEmpty() && !row.startsWith("#"))
@@ -26,16 +34,15 @@ public final class OverworldMap {
                 .toList();
         if (rows.isEmpty()) throw new IllegalStateException("Overworld map is empty: " + fileName);
 
-        width = rows.get(0).length;
+        width = rows.getFirst().length;
         height = rows.size();
         if (width == 0) throw new IllegalStateException("Map rows must contain tile IDs: " + fileName);
 
         tiles = new Tile[width][height];
-        IndexUtils.indices(height).forEach(row -> {
-            if (rows.get(row.value()).length != width) {
-                throw new IllegalStateException("Inconsistent map row width at row " + row.value());
-            }
-        });
+
+        ensureMapRowLengthIsConsistent(rows);
+
+        // Convert map IDs into Tile instances, flipping file rows into world Y coordinates.
         IndexUtils.cartesianIndices(width, height).forEach(index -> {
             int row = index.y();
             int column = index.x();
@@ -56,8 +63,14 @@ public final class OverworldMap {
         });
     }
 
-    public int width() { return width; }
-    public int height() { return height; }
+    private void ensureMapRowLengthIsConsistent(List<String[]> rows) {
+        IndexUtils.indices(height).forEach(row -> {
+            if (rows.get(row.value()).length != width) {
+                throw new IllegalStateException("Inconsistent map row width at row " + row.value());
+            }
+        });
+    }
+
     public Tile tileAt(int x, int y) { return tiles[x][y]; }
     public boolean contains(GridPosition position) {
         return position.x() >= 0 && position.x() < width && position.y() >= 0 && position.y() < height;
@@ -65,6 +78,4 @@ public final class OverworldMap {
     public boolean isTraversable(GridPosition position) {
         return contains(position) && tileAt(position.x(), position.y()).isTraversable();
     }
-    public TileCatalog tileCatalog() { return tileCatalog; }
-    public Tile tileDefinition(int id) { return tileCatalog.tileById(id); }
 }

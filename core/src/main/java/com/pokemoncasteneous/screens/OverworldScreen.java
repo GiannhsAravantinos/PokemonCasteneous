@@ -40,10 +40,10 @@ public final class OverworldScreen extends ScreenAdapter {
     public OverworldScreen(PokemonGame game) {
         this.game = game;
         overworldMap = new OverworldMap("maps/overworld.map");
-        textures = new OverworldTextures(overworldMap.tileCatalog());
+        textures = new OverworldTextures(overworldMap.getTileCatalog());
         if (!game.state().overworldPositionInitialized) {
             game.state().playerPosition = PlayerPosition.at(
-                    new GridPosition(overworldMap.width() / 2, (overworldMap.height() - 1) / 2));
+                    new GridPosition(overworldMap.getWidth() / 2, (overworldMap.getHeight() - 1) / 2));
             game.state().overworldPositionInitialized = true;
         }
         movementController = new OverworldMovementController(game.state(), overworldMap);
@@ -102,18 +102,20 @@ public final class OverworldScreen extends ScreenAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         int firstX = Math.max(0, MathUtils.floor(camera.position.x - UiConstants.VIEW_COLUMNS / 2f) - 1);
-        int lastX = Math.min(overworldMap.width() - 1, MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1);
+        int lastX = Math.min(overworldMap.getWidth() - 1, MathUtils.floor(camera.position.x + UiConstants.VIEW_COLUMNS / 2f) + 1);
         int firstY = Math.max(0, MathUtils.floor(camera.position.y - UiConstants.VIEW_ROWS / 2f) - 1);
-        int lastY = Math.min(overworldMap.height() - 1, MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1);
+        int lastY = Math.min(overworldMap.getHeight() - 1, MathUtils.floor(camera.position.y + UiConstants.VIEW_ROWS / 2f) + 1);
 
+        // Draw base ground tiles first so foreground sprites can sit on top.
         IndexUtils.cartesianIndices(firstX, lastX, firstY, lastY).forEach(index -> {
             Tile tile = overworldMap.tileAt(index.x(), index.y());
-            Tile ground = tile.isForeground() ? overworldMap.tileDefinition(tile.getUnderlayId()) : tile;
+            Tile ground = tile.isForeground() ? overworldMap.getTileCatalog().tileById(tile.getUnderlayId()) : tile;
             Texture groundTexture = textures.textureFor(ground);
             if (groundTexture != null) {
                 batch.draw(groundTexture, index.x() - 0.5f, index.y() - 0.5f, 1f, 1f);
             }
         });
+        // Draw foreground tiles after ground tiles so tall sprites overlap correctly.
         IndexUtils.cartesianIndices(firstX, lastX, firstY, lastY)
                 .map(index -> new TileAt(index, overworldMap.tileAt(index.x(), index.y())))
                 .filter(tileAt -> tileAt.tile().isForeground())
