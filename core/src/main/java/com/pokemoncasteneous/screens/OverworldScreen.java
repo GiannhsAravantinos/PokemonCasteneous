@@ -3,12 +3,16 @@ package com.pokemoncasteneous.screens;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.pokemoncasteneous.PokemonGame;
 import com.pokemoncasteneous.assets.OverworldMap;
 import com.pokemoncasteneous.assets.OverworldTextures;
@@ -19,6 +23,7 @@ import com.pokemoncasteneous.overworld.GridPosition;
 import com.pokemoncasteneous.overworld.MovementInput;
 import com.pokemoncasteneous.overworld.OverworldMovementController;
 import com.pokemoncasteneous.overworld.PlayerPosition;
+import com.pokemoncasteneous.player.PlayerInfo;
 import com.pokemoncasteneous.utils.IndexUtils;
 import com.pokemoncasteneous.utils.ScreenUtils;
 
@@ -30,9 +35,9 @@ public final class OverworldScreen extends ScreenAdapter {
     private final OrthographicCamera hudCamera = new OrthographicCamera();
     private final FitViewport worldViewport = new FitViewport(
             UiConstants.VIEW_COLUMNS, UiConstants.VIEW_ROWS, camera);
-    private final FitViewport hudViewport = new FitViewport(
-            UiConstants.VIEW_COLUMNS, UiConstants.VIEW_ROWS, hudCamera);
+    private final ScreenViewport hudViewport = new ScreenViewport(hudCamera);
     private final BitmapFont font = new BitmapFont();
+    private final ShapeRenderer shapes = new ShapeRenderer();
     private final OverworldMap overworldMap;
     private final OverworldTextures textures;
     private final OverworldMovementController movementController;
@@ -48,7 +53,7 @@ public final class OverworldScreen extends ScreenAdapter {
             game.state().overworldPositionInitialized = true;
         }
         movementController = new OverworldMovementController(game.state(), overworldMap);
-        font.getData().setScale(0.08f);
+        font.getData().setScale(2f);
     }
 
     @Override
@@ -67,23 +72,22 @@ public final class OverworldScreen extends ScreenAdapter {
         drawMap();
         drawPlayer();
 
-        // HUD coordinates use the same virtual grid, but stay fixed while the world camera follows the player.
+        // HUD coordinates are pixel-based so bitmap text stays crisp while the world camera follows the player.
         hudViewport.apply();
-        hudCamera.position.set(UiConstants.VIEW_COLUMNS / 2f, UiConstants.VIEW_ROWS / 2f, 0);
         hudCamera.update();
-        SpriteBatch batch = game.batch();
-        batch.setProjectionMatrix(hudCamera.combined);
-        batch.begin();
-        font.setColor(HUD_TEXT);
-        font.draw(batch, "FERNWOOD  /  ROUTE 01", 1, UiConstants.VIEW_ROWS - 1);
-        font.draw(batch, "WASD / ARROWS  MOVE   ENTER  ENCOUNTER", 1, 1);
-        batch.end();
+        if (game.state().playerInfoVisible) {
+            drawPlayerInfo();
+        }
+        drawHudText();
 
         // Enter starts the encounter and hands control to the battle screen.
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             game.state().beginEncounter();
             game.getScreen().dispose();
             game.setScreen(new BattleScreen(game));
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) {
+            game.state().playerInfoVisible = !game.state().playerInfoVisible;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) Gdx.app.exit();
     }
@@ -149,6 +153,60 @@ public final class OverworldScreen extends ScreenAdapter {
         batch.end();
     }
 
+    private void drawPlayerInfo() {
+        // Step 1: Project the player's world position into HUD pixel coordinates.
+        PlayerPosition playerPosition = game.state().playerPosition;
+        Vector3 screenPosition = camera.project(
+                new Vector3(playerPosition.x(), playerPosition.y() + UiConstants.PLAYER_SPRITE_HEIGHT / 2f, 0),
+                worldViewport.getScreenX(),
+                worldViewport.getScreenY(),
+                worldViewport.getScreenWidth(),
+                worldViewport.getScreenHeight());
+
+        // Step 2: Size and clamp the panel so it hovers near the player without leaving the window.
+        float panelWidth = 420f;
+        float panelHeight = 208f;
+        float panelX = MathUtils.clamp(screenPosition.x - panelWidth / 2f, 12f, hudViewport.getWorldWidth() - panelWidth - 12f);
+        float panelY = MathUtils.clamp(screenPosition.y + 22f, 58f, hudViewport.getWorldHeight() - panelHeight - 42f);
+
+        // Step 3: Draw the translucent panel background and border before drawing text.
+        shapes.setProjectionMatrix(hudCamera.combined);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(PLAYER_INFO_PANEL);
+        shapes.rect(panelX, panelY, panelWidth, panelHeight);
+        shapes.end();
+
+        shapes.begin(ShapeRenderer.ShapeType.Line);
+        shapes.setColor(PLAYER_INFO_BORDER);
+        shapes.rect(panelX, panelY, panelWidth, panelHeight);
+        shapes.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        PlayerInfo playerInfo = game.state().playerInfo;
+        SpriteBatch batch = game.batch();
+        batch.setProjectionMatrix(hudCamera.combined);
+        batch.begin();
+        // Step 4: Draw the player record fields in the same HUD coordinate space.
+        font.setColor(HUD_TEXT);
+        font.draw(batch, "ID: " + playerInfo.id(), panelX + 28f, panelY + 168f);
+        font.draw(batch, "Name: " + playerInfo.name(), panelX + 28f, panelY + 124f);
+        font.draw(batch, "Gender: " + playerInfo.gender().displayName(), panelX + 28f, panelY + 80f);
+        font.draw(batch, "Age: " + playerInfo.age(), panelX + 28f, panelY + 36f);
+        batch.end();
+    }
+
+    private void drawHudText() {
+        SpriteBatch batch = game.batch();
+        batch.setProjectionMatrix(hudCamera.combined);
+        batch.begin();
+        font.setColor(HUD_TEXT);
+        font.draw(batch, "FERNWOOD / ROUTE 01", 24f, hudViewport.getWorldHeight() - 24f);
+        font.draw(batch, "WASD / ARROWS  MOVE   ENTER  ENCOUNTER   I  INFO", 24f, 28f);
+        batch.end();
+    }
+
     @Override
     public void resize(int width, int height) {
         worldViewport.update(width, height, true);
@@ -158,6 +216,7 @@ public final class OverworldScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         font.dispose();
+        shapes.dispose();
         textures.dispose();
     }
 

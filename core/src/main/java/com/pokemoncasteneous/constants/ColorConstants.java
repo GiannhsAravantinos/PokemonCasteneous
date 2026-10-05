@@ -14,6 +14,8 @@ public final class ColorConstants {
     public static final Color TREE_FOLIAGE = new Color(0.18f, 0.39f, 0.31f, 1f);
     public static final Color TREE_TRUNK = new Color(0.36f, 0.25f, 0.19f, 1f);
     public static final Color HUD_TEXT = new Color(0.96f, 0.96f, 0.88f, 1f);
+    public static final Color PLAYER_INFO_PANEL = new Color(0.08f, 0.12f, 0.15f, 0.86f);
+    public static final Color PLAYER_INFO_BORDER = new Color(0.96f, 0.96f, 0.88f, 0.90f);
 
     public static final Color BATTLE_SKY = new Color(0.70f, 0.78f, 0.62f, 1f);
     public static final Color BATTLE_FIELD = new Color(0.38f, 0.59f, 0.46f, 1f);
